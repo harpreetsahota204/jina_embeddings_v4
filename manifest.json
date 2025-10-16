@@ -1,0 +1,30 @@
+{
+    "name": "jina_embeddings_v4",
+    "url": "https://github.com/harpreetsahota204/jina_embeddings_v4",
+    "models": [
+        {
+            "base_name": "jinaai/jina-embeddings-v4",
+            "base_filename":"jina-embeddings-v4",
+            "author": "Jina AI",
+            "license": "Apache 2.0",
+            "source": "https://huggingface.co/jinaai/jina-embeddings-v4",
+            "description": "jina-embeddings-v4 is a universal embedding model for multimodal and multilingual retrieval. The model is specially designed for complex document retrieval, including visually rich documents with charts, tables, and illustrations.",
+            "tags": [
+                "embeddings",
+                "torch",
+                "visual-document-retrieval",
+                "zero-shot"
+            ],
+            "date_added": "2025-10-16",
+            "requirements": {
+                "packages": ["huggingface-hub","transformers", "torch", "torchvision"],
+                "cpu": {
+                    "support": true
+                },
+                "gpu": {
+                    "support": true
+                }
+            }
+        }
+   ]
+}
