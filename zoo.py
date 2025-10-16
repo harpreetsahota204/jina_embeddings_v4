@@ -35,8 +35,8 @@ class JinaV4Config(fout.TorchImageModelConfig):
         
         text_prompt (str): Optional baseline text prompt for classification. Default: ""
         
-        pooling_strategy (str): Final pooling strategy for multi-vector to 1D conversion.
-            Options: "mean" (default) or "max"
+        pooling_strategy (str): Pooling strategy for multi-vector embeddings in classification.
+            Options: "mean" (default) or "max". Not used for retrieval (uses single-vector mode).
     """
 
     def __init__(self, d):
@@ -81,10 +81,10 @@ class JinaV4(fout.TorchImageModel, fom.PromptMixin):
     Jina Embeddings v4 model for document understanding and retrieval.
     
     This model can:
-    1. Embed images into vectors (single-vector: 2048 dim, multi-vector: Nx128)
-    2. Embed text queries into vectors
-    3. Support zero-shot classification via multi-vector similarity
-    4. Enable visual document retrieval
+    1. Embed images into 2048-dim vectors for retrieval/similarity search
+    2. Embed text queries into 2048-dim vectors (matching image embedding space)
+    3. Support zero-shot classification via multi-vector similarity (Nx128 dim)
+    4. Enable visual document retrieval and text-to-image search
     
     It extends TorchImageModel for image processing and PromptMixin for text embedding.
     """
@@ -334,24 +334,31 @@ class JinaV4(fout.TorchImageModel, fom.PromptMixin):
             imgs: List of images (PIL, numpy arrays, or tensors)
             
         Returns:
-            numpy array: 1D embeddings with shape (batch, dim)
+            numpy array: 1D embeddings with shape (batch, 2048)
         """
         # Convert to PIL Images
         pil_images = self._prepare_images_for_jina(imgs)
         
         with torch.no_grad():
-            # Get multi-vector embeddings for classification
-            multivector_embeddings = self.model.encode_image(
+            # Get multi-vector embeddings for classification (if classes are defined)
+            if self.classes is not None and len(self.classes) > 0:
+                multivector_embeddings = self.model.encode_image(
+                    images=pil_images,
+                    task=self.config.task,
+                    return_multivector=True
+                )
+                # Store multi-vector embeddings (list of variable-length tensors)
+                self._last_computed_multi_vector_embeddings = multivector_embeddings
+            
+            # Get single-vector embeddings (2048-dim) for retrieval/similarity search
+            singlevector_embeddings = self.model.encode_image(
                 images=pil_images,
                 task=self.config.task,
-                return_multivector=True
+                return_multivector=False
             )
             
-            # Store multi-vector embeddings (list of variable-length tensors)
-            self._last_computed_multi_vector_embeddings = multivector_embeddings
-            
-            # Apply final pooling to get 1D vectors for retrieval
-            final_embeddings = self._apply_final_pooling(multivector_embeddings)
+            # Stack into tensor: (batch, 2048)
+            final_embeddings = torch.stack(singlevector_embeddings)
             
             # Cache final embeddings
             self._last_computed_embeddings = final_embeddings
