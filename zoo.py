@@ -62,18 +62,11 @@ class JinaV4Config(fout.TorchImageModelConfig):
         self.query_prompt_name = self.parse_string(d, "query_prompt_name", default="query")
         self.passage_prompt_name = self.parse_string(d, "passage_prompt_name", default="passage")
         self.text_prompt = self.parse_string(d, "text_prompt", default="")
-        self.pooling_strategy = self.parse_string(d, "pooling_strategy", default="mean")
-        
+
         # Validate task
         valid_tasks = ["retrieval", "text-matching", "code"]
         if self.task not in valid_tasks:
             raise ValueError(f"task must be one of {valid_tasks}, got '{self.task}'")
-        
-        # Validate pooling strategy
-        if self.pooling_strategy not in ["mean", "max"]:
-            raise ValueError(
-                f"pooling_strategy must be 'mean' or 'max', got '{self.pooling_strategy}'"
-            )
 
 
 class JinaV4(fout.TorchImageModel, fom.PromptMixin):
@@ -143,43 +136,6 @@ class JinaV4(fout.TorchImageModel, fom.PromptMixin):
         self.config.text_prompt = value
         self._text_features = None  # Invalidate cache
     
-    def _apply_final_pooling(self, embeddings):
-        """Apply final pooling to multi-vector embeddings.
-        
-        Reduces multi-vector embeddings to single vectors for FiftyOne storage.
-        
-        Args:
-            embeddings: Multi-vector embeddings, either:
-                - torch.Tensor of shape (batch, num_vectors, dim)
-                - List of tensors with shapes [(num_vectors, dim), ...]
-            
-        Returns:
-            torch.Tensor: Fixed-dimension pooled embeddings with shape (batch, dim)
-        """
-        # Handle list of variable-length tensors
-        if isinstance(embeddings, list):
-            pooled_list = []
-            for emb in embeddings:
-                # emb shape: (num_vectors, dim)
-                if self.pooling_strategy == "mean":
-                    pooled = emb.mean(dim=0)  # (dim,)
-                elif self.pooling_strategy == "max":
-                    pooled = emb.max(dim=0)[0]  # (dim,)
-                else:
-                    raise ValueError(f"Unknown pooling_strategy: {self.pooling_strategy}")
-                pooled_list.append(pooled)
-            return torch.stack(pooled_list)  # (batch, dim)
-        
-        # Handle batched tensor
-        if self.pooling_strategy == "mean":
-            pooled = embeddings.mean(dim=1)  # (batch, dim)
-            return pooled
-        elif self.pooling_strategy == "max":
-            pooled = embeddings.max(dim=1)[0]  # (batch, dim)
-            return pooled
-        else:
-            raise ValueError(f"Unknown pooling_strategy: {self.pooling_strategy}")
-
     def _load_model(self, config):
         """Load Jina v4 model from HuggingFace.
         
