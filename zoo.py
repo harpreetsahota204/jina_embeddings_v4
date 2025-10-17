@@ -155,18 +155,18 @@ class JinaV4(fout.TorchImageModel, fom.PromptMixin):
         torch_dtype = torch.float16 if self.device == "cuda" else torch.float32
         
         # Load model
-        model = AutoModel.from_pretrained(
+        self.model = AutoModel.from_pretrained(
             config.model_path,
             trust_remote_code=True,
             torch_dtype=torch_dtype
         )
         
-        model.to(self._device)
-        model.eval()
+        self.model.to(self._device)
+        self.model.eval()
         
         logger.info(f"Model loaded on {self._device} with dtype {torch_dtype}")
         
-        return model
+        return self.model
 
     def _prepare_images_for_jina(self, imgs):
         """Convert images to PIL format (Jina's expected input).
