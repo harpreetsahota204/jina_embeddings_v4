@@ -162,9 +162,9 @@ class JinaV4(fout.TorchImageModel, fom.PromptMixin):
             
             # Use bfloat16 for Ampere or newer GPUs (capability >= 8.0)
             if capability[0] >= 8:
-                model_kwargs["torch_dtype"] = torch.bfloat16
+                model_kwargs["dtype"] = torch.bfloat16
             else:
-                model_kwargs["torch_dtype"] = torch.float16
+                model_kwargs["dtype"] = torch.float16
 
         # Enable flash attention if available
         if is_flash_attn_2_available():
@@ -179,8 +179,6 @@ class JinaV4(fout.TorchImageModel, fom.PromptMixin):
         
         self.model.to(self._device)
         self.model.eval()
-        
-        logger.info(f"Model loaded on {self._device} with dtype {torch_dtype}")
         
         return self.model
 
