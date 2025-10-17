@@ -140,7 +140,7 @@ class JinaV4(fout.TorchImageModel, fom.PromptMixin):
         self.config.text_prompt = value
         self._text_features = None  # Invalidate cache
     
-    def load_model(self, config):
+    def _load_model(self, config):
         """Load Jina v4 model from HuggingFace.
         
         Args:
