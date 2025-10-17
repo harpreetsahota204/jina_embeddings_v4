@@ -12,6 +12,7 @@ import torch
 import torch.nn.functional as F
 
 from transformers import AutoModel
+from transformers.utils.import_utils import is_flash_attn_2_available
 
 logger = logging.getLogger(__name__)
 
@@ -151,14 +152,29 @@ class JinaV4(fout.TorchImageModel, fom.PromptMixin):
         """
         logger.info(f"Loading Jina v4 model from {config.model_path}")
         
-        # Determine dtype based on device
-        torch_dtype = torch.float16 if self.device == "cuda" else torch.float32
+        model_kwargs = {
+            "device_map": self.device,
+        }
+
+        # Set optimizations based on device capabilities
+        if self.device == "cuda" and torch.cuda.is_available():
+            capability = torch.cuda.get_device_capability(self._device)
+            
+            # Use bfloat16 for Ampere or newer GPUs (capability >= 8.0)
+            if capability[0] >= 8:
+                model_kwargs["torch_dtype"] = torch.bfloat16
+            else:
+                model_kwargs["torch_dtype"] = torch.float16
+
+        # Enable flash attention if available
+        if is_flash_attn_2_available():
+            model_kwargs["attn_implementation"] = "flash_attention_2"
         
         # Load model
         self.model = AutoModel.from_pretrained(
             config.model_path,
             trust_remote_code=True,
-            torch_dtype=torch_dtype
+            **model_kwargs
         )
         
         self.model.to(self._device)
