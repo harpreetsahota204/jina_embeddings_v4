@@ -165,9 +165,12 @@ class JinaV4(fout.TorchImageModel, fom.PromptMixin):
                 model_kwargs["dtype"] = torch.bfloat16
             else:
                 model_kwargs["dtype"] = torch.float16
+        else:
+            # For CPU and MPS (Mac), use float16 as BFloat16 is not supported
+            model_kwargs["dtype"] = torch.float16
 
-        # Enable flash attention if available
-        if is_flash_attn_2_available():
+        # Enable flash attention if available (only on CUDA)
+        if is_flash_attn_2_available() and self.device == "cuda":
             model_kwargs["attn_implementation"] = "flash_attention_2"
         
         # Load model
