@@ -162,12 +162,12 @@ class JinaV4(fout.TorchImageModel, fom.PromptMixin):
             
             # Use bfloat16 for Ampere or newer GPUs (capability >= 8.0)
             if capability[0] >= 8:
-                model_kwargs["dtype"] = torch.bfloat16
+                model_kwargs["torch_dtype"] = torch.bfloat16
             else:
-                model_kwargs["dtype"] = torch.float16
+                model_kwargs["torch_dtype"] = torch.float16
         else:
             # For CPU and MPS (Mac), use float16 as BFloat16 is not supported
-            model_kwargs["dtype"] = torch.float16
+            model_kwargs["torch_dtype"] = torch.float16
 
         # Enable flash attention if available (only on CUDA)
         if is_flash_attn_2_available() and self.device == "cuda":
