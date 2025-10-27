@@ -2,6 +2,8 @@
 
 Integration of [Jina Embeddings v4](https://huggingface.co/jinaai/jina-embeddings-v4) as a FiftyOne Zoo Model for multimodal document retrieval, text matching, and code understanding.
 
+![image](jinaembv4_fo.gif)
+
 ## Overview
 
 [Jina Embeddings v4](https://huggingface.co/jinaai/jina-embeddings-v4) is a state-of-the-art Vision Language Model that generates embeddings for both images and text in a shared vector space. Built on a parameter-efficient architecture using PEFT (Parameter-Efficient Fine-Tuning), it supports multiple tasks including document retrieval, multilingual text matching, and code understanding. This integration adapts Jina v4 for use with FiftyOne's embedding and similarity infrastructure.
