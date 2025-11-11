@@ -1,5 +1,9 @@
 import logging
 import os
+import sys
+import io
+import warnings
+from contextlib import contextmanager
 from PIL import Image
 
 import numpy as np
@@ -15,6 +19,29 @@ from transformers import AutoModel
 from transformers.utils.import_utils import is_flash_attn_2_available
 
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def suppress_output():
+    """Suppress stdout, stderr, warnings, and transformers logging."""
+    old_stdout = sys.stdout
+    old_stderr = sys.stderr
+    sys.stdout = io.StringIO()
+    sys.stderr = io.StringIO()
+    
+    # Suppress transformers logging
+    transformers_logger = logging.getLogger("transformers")
+    old_transformers_level = transformers_logger.level
+    transformers_logger.setLevel(logging.ERROR)
+    
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            yield
+    finally:
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+        transformers_logger.setLevel(old_transformers_level)
 
 
 class JinaV4Config(fout.TorchImageModelConfig):
@@ -253,12 +280,13 @@ class JinaV4(fout.TorchImageModel, fom.PromptMixin):
             List of multi-vector embeddings [(num_vectors, 128), ...]
         """
         with torch.no_grad():
-            embeddings = self.model.encode_text(
-                texts=prompts,
-                task=self.config.task,
-                prompt_name=self.config.query_prompt_name,
-                return_multivector=True  # Multi-vector for classification
-            )
+            with suppress_output():
+                embeddings = self.model.encode_text(
+                    texts=prompts,
+                    task=self.config.task,
+                    prompt_name=self.config.query_prompt_name,
+                    return_multivector=True  # Multi-vector for classification
+                )
         
         # embeddings is a list of tensors on CUDA
         # Each tensor has shape (num_vectors, 128)
@@ -274,13 +302,14 @@ class JinaV4(fout.TorchImageModel, fom.PromptMixin):
             numpy array: 2048-dim embedding vector
         """
         with torch.no_grad():
-            # Get single-vector embedding (2048 dim)
-            embeddings = self.model.encode_text(
-                texts=[prompt],
-                task=self.config.task,
-                prompt_name=self.config.query_prompt_name,
-                return_multivector=False  # Single-vector for retrieval
-            )
+            with suppress_output():
+                # Get single-vector embedding (2048 dim)
+                embeddings = self.model.encode_text(
+                    texts=[prompt],
+                    task=self.config.task,
+                    prompt_name=self.config.query_prompt_name,
+                    return_multivector=False  # Single-vector for retrieval
+                )
         
         # embeddings is [tensor(2048,)] on CUDA
         result = embeddings[0].cpu().numpy()
@@ -296,13 +325,14 @@ class JinaV4(fout.TorchImageModel, fom.PromptMixin):
             numpy array: 2048-dim embeddings with shape (batch, 2048)
         """
         with torch.no_grad():
-            # Get single-vector embeddings
-            embeddings = self.model.encode_text(
-                texts=prompts,
-                task=self.config.task,
-                prompt_name=self.config.query_prompt_name,
-                return_multivector=False  # Single-vector for retrieval
-            )
+            with suppress_output():
+                # Get single-vector embeddings
+                embeddings = self.model.encode_text(
+                    texts=prompts,
+                    task=self.config.task,
+                    prompt_name=self.config.query_prompt_name,
+                    return_multivector=False  # Single-vector for retrieval
+                )
         
         # Stack and convert to numpy
         result = torch.stack(embeddings).cpu().numpy()
@@ -323,12 +353,13 @@ class JinaV4(fout.TorchImageModel, fom.PromptMixin):
         pil_images = self._prepare_images_for_jina(imgs)
         
         with torch.no_grad():
-            # Get single-vector embeddings (2048-dim) for retrieval
-            embeddings = self.model.encode_image(
-                images=pil_images,
-                task=self.config.task,
-                return_multivector=False  # Single-vector mode
-            )
+            with suppress_output():
+                # Get single-vector embeddings (2048-dim) for retrieval
+                embeddings = self.model.encode_image(
+                    images=pil_images,
+                    task=self.config.task,
+                    return_multivector=False  # Single-vector mode
+                )
             
             # Stack into tensor
             final_embeddings = torch.stack(embeddings)
@@ -457,11 +488,12 @@ class JinaV4(fout.TorchImageModel, fom.PromptMixin):
         
         # Get multi-vector image embeddings (separate forward pass)
         with torch.no_grad():
-            image_features = self.model.encode_image(
-                images=pil_images,
-                task=self.config.task,
-                return_multivector=True  # Multi-vector for classification
-            )
+            with suppress_output():
+                image_features = self.model.encode_image(
+                    images=pil_images,
+                    task=self.config.task,
+                    return_multivector=True  # Multi-vector for classification
+                )
         
         # Get cached multi-vector text features for classes
         text_features = self._get_text_features()
