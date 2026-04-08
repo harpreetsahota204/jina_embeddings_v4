@@ -17,7 +17,7 @@
             ],
             "date_added": "2025-10-16",
             "requirements": {
-                "packages": ["huggingface-hub","transformers", "torch", "torchvision"],
+                "packages": ["huggingface-hub","transformers", "torch", "torchvision", "peft"],
                 "cpu": {
                     "support": true
                 },

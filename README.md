@@ -51,7 +51,7 @@ We use Jina's multi-vector embeddings with final pooling:
 
 ```bash
 # Install FiftyOne and Jina v4 dependencies
-pip install fiftyone transformer torch torchvision pillow
+pip install fiftyone transformer torch torchvision pillow peft
 ```
 
 **Note**: This model requires `transformers`, `torch`, and `peft`.
