@@ -1,14 +1,3 @@
-# ---------------------------------------------------------------------------
-# Compatibility shim: SlidingWindowCache was removed in transformers v5.
-# Jina's bundled qwen2_5_vl.py imports it but never instantiates it
-# during embedding inference. Alias to StaticCache so the import resolves.
-# ---------------------------------------------------------------------------
-try:
-    from transformers.cache_utils import SlidingWindowCache
-except ImportError:
-    from transformers import cache_utils as _cache_utils
-    _cache_utils.SlidingWindowCache = _cache_utils.StaticCache
-
 import logging
 import os
 
